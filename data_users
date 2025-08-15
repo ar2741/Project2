@@ -1,0 +1,37 @@
+export const USERS = [
+  { username: "misha.k", displayName: "Misha Kapoor" },
+  { username: "valerie.t", displayName: "Valerie Trent" },
+  { username: "admin.user", displayName: "Admin User" },
+  { username: "rae.s", displayName: "Rae Singh" },
+];
+
+
+storage
+
+export const REPORTS = [
+  { code: "ACTV", name: "Recent Activity Report" },
+  { code: "PEND", name: "Pending Requests Report" },
+  { code: "USRS", name: "Active Users Report" },
+  { code: "AUDT", name: "Audit Trail Report" },
+];
+
+
+utils storage
+const KEY = "sc-admin-report-access";
+
+export function loadAccess() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveAccess(items) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(items));
+  } catch {
+    /* ignore write errors */
+  }
+}
