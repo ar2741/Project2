@@ -1,0 +1,12 @@
+export default function HeaderBar() {
+  return (
+    <div className="header">
+      <h2 className="page-title">Admin Dashboard</h2>
+
+      <div className="header-right">
+        <span className="logged-in">Logged In as: <strong>Admin User</strong></span>
+        <button className="btn btn-sc-green logout-btn">Logout</button>
+      </div>
+    </div>
+  );
+}
