@@ -1,0 +1,240 @@
+// App.js
+
+import { useState, useEffect, useMemo } from "react";
+import dayjs from "dayjs";
+import { USERS } from "./data/users";
+import { REPORTS } from "./data/reports";
+import { loadAccess, saveAccess } from "./utils/storage";
+
+export default function App() {
+  // ---------------
+  // Report Access state and logic
+  // ---------------
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedReport, setSelectedReport] = useState("");
+  const [selectedAccess, setSelectedAccess] = useState("View");
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    setRecords(loadAccess());
+  }, []);
+
+  useEffect(() => {
+    saveAccess(records);
+  }, [records]);
+
+  const canAssign = useMemo(
+    () => selectedUser && selectedReport,
+    [selectedUser, selectedReport]
+  );
+
+  function assign() {
+    if (!canAssign) return;
+
+    const exists = records.find(
+      (r) => r.username === selectedUser && r.report === selectedReport
+    );
+    const now = dayjs().format("YYYY-MM-DD HH:mm");
+
+    if (exists) {
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.username === selectedUser && r.report === selectedReport
+            ? { ...r, access: selectedAccess, updatedAt: now }
+            : r
+        )
+      );
+    } else {
+      setRecords((prev) => [
+        {
+          id: crypto.randomUUID(),
+          username: selectedUser,
+          report: selectedReport,
+          access: selectedAccess,
+          createdAt: now,
+          updatedAt: now,
+        },
+        ...prev,
+      ]);
+    }
+
+    setSelectedUser("");
+    setSelectedReport("");
+    setSelectedAccess("View");
+  }
+
+  function remove(id) {
+    setRecords((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  function cycleAccess(id) {
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              access: r.access === "View" ? "Edit" : "View",
+              updatedAt: dayjs().format("YYYY-MM-DD HH:mm"),
+            }
+          : r
+      )
+    );
+  }
+
+  // ---------------
+  // UI
+  // ---------------
+  return (
+    <div className="dashboard-container">
+      {/* sidebar */}
+      <aside className="sidebar">
+        <div className="logo-section">
+          <img className="logo" src="/sc-logo.svg" alt="Standard Chartered" />
+        </div>
+        <div className="menu-section">
+          <ul className="sidebar-nav">
+            <li className="active">
+              <span className="icon">📄</span>
+              <span>Report Access</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      {/* main area */}
+      <main className="main-content">
+        {/* header */}
+        <div className="header">
+          <h2 className="page-title">Admin Dashboard</h2>
+          <div className="header-right">
+            <span className="logged-in">
+              Logged In as: <strong>Admin User</strong>
+            </span>
+            <button className="btn btn-sc-green logout-btn">Logout</button>
+          </div>
+        </div>
+
+        {/* content */}
+        <div className="main-scroll">
+          <section className="card p-4 report-access-card">
+            <h3 className="mb-3">Report Access</h3>
+            <div className="row g-3 align-items-end">
+              <div className="col-md-4">
+                <label className="form-label">Select User</label>
+                <select
+                  className="form-select"
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                >
+                  <option value="">Choose a user…</option>
+                  {USERS.map((u) => (
+                    <option key={u.username} value={u.username}>
+                      {u.displayName} ({u.username})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label">Select Report</label>
+                <select
+                  className="form-select"
+                  value={selectedReport}
+                  onChange={(e) => setSelectedReport(e.target.value)}
+                >
+                  <option value="">Choose a report…</option>
+                  {REPORTS.map((r) => (
+                    <option key={r.code} value={r.name}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-2">
+                <label className="form-label">Access</label>
+                <select
+                  className="form-select"
+                  value={selectedAccess}
+                  onChange={(e) => setSelectedAccess(e.target.value)}
+                >
+                  <option>View</option>
+                  <option>Edit</option>
+                </select>
+              </div>
+
+              <div className="col-md-2 d-grid">
+                <button
+                  className="btn btn-sc-blue"
+                  disabled={!canAssign}
+                  onClick={assign}
+                >
+                  Assign Access
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 table-responsive">
+              <table className="table table-hover align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th>Username</th>
+                    <th>Created At</th>
+                    <th>Report</th>
+                    <th>Access</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="text-center text-muted py-4">
+                        No records yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    records.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.username}</td>
+                        <td>
+                          <div className="small text-muted">{r.createdAt}</div>
+                        </td>
+                        <td>{r.report}</td>
+                        <td>
+                          <span
+                            className={
+                              "badge " +
+                              (r.access === "Edit"
+                                ? "bg-sc-green"
+                                : "bg-sc-blue")
+                            }
+                          >
+                            {r.access}
+                          </span>
+                        </td>
+                        <td className="d-flex gap-2">
+                          <button
+                            className="btn btn-sm btn-outline-sc-blue"
+                            onClick={() => cycleAccess(r.id)}
+                          >
+                            Toggle
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => remove(r.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}
